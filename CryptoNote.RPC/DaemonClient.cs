@@ -117,5 +117,129 @@ namespace CryptoNote.RPC
             };      
         }
 
+        public async Task<DaemonInfo> GetDaemonInfo()
+        {
+            RpcRequest<object> request = new RpcRequest<object>()
+            {
+            };
+
+            DaemonInfo response = await GetAsync<DaemonInfo>(Uri + "/getinfo");
+
+            return response;
+        }
+
+        public async Task<BlockInfo> GetBlockInfo(string blockHash)
+        {
+            GetBlockInfoData.Request arg = new GetBlockInfoData.Request()
+            {
+                Hash = blockHash
+            };
+
+            RpcRequest<GetBlockInfoData.Request> request = new RpcRequest<GetBlockInfoData.Request>()
+            {
+                Method = "f_block_json",
+                Arguments = arg
+            };
+
+            RpcResponse<GetBlockInfoData.Response> response = await PostAsync<RpcResponse<GetBlockInfoData.Response>>(request, Uri + "/json_rpc");
+
+            if (response.Error != null)
+            {
+                throw new RpcException(response.Error.Message);
+            }
+
+            BlockInfo res = new BlockInfo()
+            {
+                BaseReward = response.Result.Data.BaseReward,
+                BlockSize = response.Result.Data.BlockSize,
+                Difficulty = response.Result.Data.Difficulty,
+                Hash = response.Result.Data.Hash,
+                Height = response.Result.Data.Height,
+                IsOrphan = response.Result.Data.IsOrphan,
+                MajorVersion = response.Result.Data.MajorVersion,
+                MinorVersion = response.Result.Data.MinorVersion,
+                MedianSize = response.Result.Data.MedianSize,
+                PreviousHash = response.Result.Data.PreviousHash,
+                Reward = response.Result.Data.Reward,
+                RewardPenalty = response.Result.Data.RewardPenalty,
+                Timestamp = new DateTime(1970, 1, 1).AddSeconds(response.Result.Data.Timestamp),
+                TotalCoinsInNetwork = response.Result.Data.TotalCoinsInNetwork,
+                TotalFeeAmount = response.Result.Data.TotalFeeAmount,
+                TotalTransactionsInNetwork = response.Result.Data.TotalTransactionsInNetwork,
+                TransactionsSize = response.Result.Data.TransactionsSize
+            };
+
+            res.TransactionsHashes = new List<string>();
+            if (response.Result.Data.TotalTransactionsInBlock > 0)
+            {
+                foreach (var item in response.Result.Data.Transactions)
+                {
+                    res.TransactionsHashes.Add(item.Hash);
+                }
+            }
+
+            return res;
+        }
+
+        public async Task<TransactionInfo> GetTransactionInfo(string transactionHash)
+        {
+            GetTransactionInfoData.Request arg = new GetTransactionInfoData.Request()
+            {
+                Hash = transactionHash
+            };
+
+            RpcRequest<GetTransactionInfoData.Request> request = new RpcRequest<GetTransactionInfoData.Request>()
+            {
+                Method = "f_transaction_json",
+                Arguments = arg
+            };
+
+            RpcResponse<GetTransactionInfoData.Response> response = await PostAsync<RpcResponse<GetTransactionInfoData.Response>>(request, Uri + "/json_rpc");
+
+            if (response.Error != null)
+            {
+                throw new RpcException(response.Error.Message);
+            }
+
+            TransactionInfo res = new TransactionInfo()
+            {
+                AmountOut = response.Result.TXDetails.AmountOut,
+                Fee = response.Result.TXDetails.Fee,
+                Mixin = response.Result.TXDetails.Mixin,
+                Hash = response.Result.TXDetails.Hash,
+                PaymentId = response.Result.TXDetails.PaymentId,
+                Size = response.Result.TXDetails.Size,
+                FromBlock = new TransactionInfo.Block()
+                {
+                    Hash = response.Result.BlockInfo.Hash,
+                    Height = response.Result.BlockInfo.Height,
+                    Timestamp = new DateTime(1970, 1, 1).AddSeconds(response.Result.BlockInfo.Timestamp)
+                }
+            };
+
+            res.VIN = new List<TransactionInfo.VINItem>();
+
+            foreach (var item in response.Result.TX.VIN)
+            {
+                res.VIN.Add(new TransactionInfo.VINItem()
+                {
+                    Amount = item.Value.Amount,
+                    Image = item.Value.Image
+                });
+            }
+
+            res.VOUT = new List<TransactionInfo.VOUTItem>();
+
+            foreach (var item in response.Result.TX.VOUT)
+            {
+                res.VOUT.Add(new TransactionInfo.VOUTItem()
+                {
+                    Amount = item.Amount,
+                    Key = item.Target.Data.Key
+                });
+            }
+
+            return res;
+        }
     }
 }
