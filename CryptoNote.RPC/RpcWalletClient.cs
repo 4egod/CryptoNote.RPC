@@ -193,5 +193,22 @@ namespace CryptoNote.RPC
 
             return res;
         }
+
+        public async Task Save()
+        {
+            RpcRequest<object> request = new RpcRequest<object>()
+            {
+                Method = "save",
+                Arguments = new object()
+            };
+
+            RpcResponse<object> response = await PostAsync<RpcResponse<object>>(request, Uri);
+
+            if (response.Error != null)
+            {
+                throw new RpcException(response.Error.Message);
+            }
+        }
+
     }
 }

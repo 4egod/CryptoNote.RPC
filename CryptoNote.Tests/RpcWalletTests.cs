@@ -54,5 +54,10 @@ namespace CryptoNote.Tests
             Debug.WriteLine($"New address: {address}");
         }
 
+        [TestMethod]
+        public void SaveTest()
+        {
+            _rpc.Save().Wait();
+        }
     }
 }
